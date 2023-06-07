@@ -1,8 +1,8 @@
-#ifndef instrucoes6502.h
-#define instrucoes6502.h
+#ifndef instrucoes6502
+#define instrucoes6502
 #include <stdint.h>
 
-uint16_t LDA = 0xA9;  //LDA com imediato
+uint16_t LDA = 0b10101001;  //LDA com imediato
 uint16_t ADC = 0x65;  //ADC, adiciona o acumulador a algum outro registrador
 uint16_t ADChash = 0x69; //ADC#, adiciona imediato ao acumulador
 uint16_t SBChash = 0xE9;  //SBC#, subtrai o acumulador por um imediato
@@ -18,5 +18,4 @@ uint16_t ANDI = 0x29; //ANDI(AND com imediato), realiza a operação AND entr eu
 uint16_t ORAhash = 0x09; //ORA#, realiza operação OR enrte acumulador e valor imediato
 uint16_t EORhash = 0x49; //EOR#, realiza operação XOR entre acumulador e valor imediato
 
-
-#endif instrucoes6502.h
+#endif
