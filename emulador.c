@@ -7,22 +7,8 @@
 #include <assert.h>
 #include "instrucoes6502.h"
 
-
-typedef struct {
-
-    uint8_t acumulador;  //valores iniciais para os registradores
-    uint8_t indicex;
-    uint8_t indicey;
-    uint8_t stackpointer;
-    uint8_t statusregister;
-    uint16_t programcounter;
-    int carry;
-
-} Processador;
-
-void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivobin, int yterminal, int xterminal);
-
-uint8_t ram[0x07D0]; //declaração da memória ram com 4kb de armazenamento
+void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda);
+void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda);
 
 int main() {
     
@@ -32,11 +18,12 @@ int main() {
     noecho();
     curs_set(FALSE);
     processador.programcounter = 0x0600;  //valor inicial do program counter
+    processador.acumulador = processador.indicex = processador.indicey = processador.stackpointer = processador.statusregister = 0x000;
 
     int xterminal;
     int yterminal;
-    char caminhoarquivo[100]; //string que indica o nome ou o caminho do arquivo binário
-    FILE *arquivobinario;
+    char caminhoarquivo[200]; //string que indica o nome ou o caminho do arquivo binário
+    FILE *arquivo;
 
     getmaxyx(stdscr, yterminal, xterminal);
 
@@ -143,17 +130,16 @@ int main() {
     refresh();
 
     WINDOW *borda = newwin(yterminal - 7, xterminal - 7, 4, 4);
+    getmaxyx(borda, yborda, xborda);
 
-    mvwprintw(borda,yterminal / 2 - 8, xterminal / 2 - 18, " _                __  _  _ __ \n");
-    mvwprintw(borda, yterminal / 2 - 7, xterminal / 2 - 18, "|_) o  _  _ |_     _)|_|/ \\__)\n");
-    mvwprintw(borda, yterminal / 2 - 6, xterminal / 2 - 18, "| \\ | (_ (_)| |   /__| |\\_/__)\n");
-
-    wrefresh(borda);
-
+    mvwprintw(borda, yterminal / 2 - 8, (xterminal - strlen(logopt1)) / 2, "%s", logopt1);  //print da logo do menu inicial
+    mvwprintw(borda, yterminal / 2 - 7, (xterminal - strlen(logopt2)) / 2, "%s", logopt2);
+    mvwprintw(borda, yterminal / 2 - 6, (xterminal - strlen(logopt3)) / 2, "%s", logopt3);
     wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
+
     wrefresh(borda);
 
-    WINDOW *menu = newwin(10, 15, yterminal / 2 + 1, xterminal / 2 - 6);
+    WINDOW *menu = newwin(4, 15, yterminal / 2 + 1, (xterminal - 10) / 2);
     refresh();
 
     char *menuopcoes[] = {"Iniciar", "Sair"};
@@ -185,6 +171,7 @@ while (1) {
     opcao = wgetch(menu);
 
     switch (opcao) {
+
         case KEY_UP:
             highlight--;
             if (highlight < 0) {
@@ -210,35 +197,38 @@ while (1) {
             if (highlight == 0) {
 
                 nocbreak();  //habilita a entrada de informação até o usuário digitar enter
-                echo();
+                echo(); 
+                curs_set(TRUE);
                 refresh();
 
                 WINDOW *JanelaString = newwin(1, xterminal - 5, yterminal / 2, 6);
                 keypad(JanelaString, TRUE);
+                EntradaInfo = newwin(3, xborda - 30, yterminal / 2, (xterminal - (xborda - 30)) / 2);
 
                 clear();
                 refresh();
-
-                setbuf(stdin, NULL);
-                wprintw(JanelaString, "Digite o caminho do arquivo binário: ");
-                curs_set(TRUE);
-                wmove(JanelaString, 1, 40);
-
+                wclear(borda);
+                wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
+                wrefresh(borda);
+                wborder(EntradaInfo, '#', '#', '-', '-', '-', '-', '-', '-');
+                wrefresh(EntradaInfo);
+                mvwprintw(borda, yborda / 2 - 3, (xborda - strlen("Digite o caminho do arquivo contendo o codigo-fonte")) / 2, "Digite o caminho do arquivo contendo o codigo-fonte");
+                wrefresh(borda);
+                move(yterminal / 2 + 1, (xterminal - (xborda - 30)) / 2 + 2);
                 refresh();
-                wgetstr(JanelaString, caminhoarquivo);
-                // caminhoarquivo[strcspn(caminhoarquivo, "\n")] = '\0';
+                getnstr(caminhoarquivo, 200);  //função de coleta de string pra biblioteca ncurses q nn deixa caractere \n como final
                 setbuf(stdin, NULL);
 
-                arquivobinario = fopen(caminhoarquivo, "rb");
-                if(arquivobinario == NULL) {
+                arquivo = fopen(caminhoarquivo, "rb");
 
-                    clear();
+                if(arquivo == NULL) {
+
+                    wclear(borda);
                     refresh();
-
                     curs_set(FALSE);
-
-                    mvprintw(yterminal / 2, xterminal / 2 - 28, "Erro na abertura de arquivo! Pressione qualquer tecla.\n");
-                    refresh();
+                    wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
+                    mvwprintw(borda, yborda / 2, (xborda - strlen("Erro na abertura de arquivo! Pressione qualquer tecla")) / 2, "Erro na abertura de arquivo! Pressione qualquer tecla");
+                    wrefresh(borda);
                     getch();
 
                     endwin();
@@ -247,15 +237,18 @@ while (1) {
                 }
                 else { 
 
-                    mvprintw(yterminal / 2 - 2, xterminal / 2, "Sucesso na abertura do arquivo!");
+                    curs_set(FALSE);
+                    wclear(borda);
+                    wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
+                    mvwprintw(borda, yborda / 2, (xborda - strlen("Sucesso na abertura do arquivo! Pressione qualquer tecla para prosseguir")) / 2, "Sucesso na abertura do arquivo! Pressione qualquer tecla para prosseguir");
+                    wrefresh(borda);
+                    getch();
+                    InterfaceGrafica(borda, &processador, caminhoarquivo, arquivo, yterminal, xterminal, yborda, xborda);
 
                 }
 
-                LerArquivo(&processador, caminhoarquivo, arquivobinario, yterminal, xterminal);
 
             }
-
-            break;
 
     }
 }
@@ -267,25 +260,82 @@ FIM:
     return 0;
 }
 
-void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivobin, int yterminal, int xterminal) {
+void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda) {
+
+    int ContadorCiclos = 0;
+    char StringAux[20];
+    char StringAux1[20];
+
+    while(arquivo != EOF) {
+        
+        wclear(borda);
+
+        strcpy(StringAux, "X = 0x");
+        sprintf(StringAux1, "%x", processador->indicex);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2, (xborda - strlen(StringAux)) / 2, StringAux);
+
+        strcpy(StringAux, "Y = 0x");
+        sprintf(StringAux1, "%x", processador->indicey);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2 + 1, (xborda - strlen(StringAux)) / 2, StringAux);
+        
+        strcpy(StringAux, "A = 0x");
+        sprintf(StringAux1, "%x", processador->acumulador);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2 + 2, (xborda - strlen(StringAux)) / 2, StringAux);
+        
+        strcpy(StringAux, "SP = 0x");
+        sprintf(StringAux1, "%x", processador->stackpointer);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2 + 3, (xborda - strlen(StringAux)) / 2, StringAux);
+        
+        strcpy(StringAux, "Status register = 0x");
+        sprintf(StringAux1, "%x", processador->statusregister);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2 + 4, (xborda - strlen(StringAux)) / 2, StringAux);
+        
+        strcpy(StringAux, "Program counter = 0x");
+        sprintf(StringAux1, "%x", processador->programcounter);
+        strcat(StringAux, StringAux1);
+        mvwprintw(borda, (yborda - 7) / 2 + 5, (xborda - strlen(StringAux)) / 2, StringAux);
+        
+        sprintf(StringAux1, "Ciclo = %i", ContadorCiclos);
+        mvwprintw(borda, (yborda - 7) / 2 + 6, (xborda - strlen(StringAux1)) / 2, StringAux1);
+        
+        mvwprintw(borda, (yborda - 7) / 2 + 13, (xborda - strlen("Pressione qualquer tecla para o proximo ciclo")) / 2, "Pressione qualquer tecla para o proximo ciclo");
+        
+        wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
+        wrefresh(borda);
+        
+        getch();
+
+        LerArquivo(processador, caminhoarquivo, arquivo, yterminal, xterminal, yborda, xborda);
+
+    }
+
+    return;
+
+}
+
+void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda) {
 
     int resultadoleitura;
 
     noecho();
     cbreak();
 
-    while(arquivobin != EOF) {
+    fscanf(arquivo, "%x: ", processador->programcounter);
+     
+    while(arquivo != EOF) {
 
-        fread(&resultadoleitura, sizeof(int), 8, arquivobin);
+        fscanf(arquivo, "%x ", &resultadoleitura);
 
-        if(resultadoleitura == LDA) {
+        switch(resultadoleitura) {
 
-            clear();
-            refresh();
+            case 0xA9:  //LDA
 
-            mvprintw(yterminal / 2, xterminal / 2, "LDA");
-            refresh();
-            getch();
+            break;
 
         }
 
