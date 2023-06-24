@@ -1,6 +1,12 @@
 #ifndef instrucoes6502
 #define instrucoes6502
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <ncurses.h>
+#include <unistd.h>
+#include <string.h>
+#include <assert.h>
 
 WINDOW *EntradaInfo;
 int yborda, xborda;
@@ -59,20 +65,20 @@ unsigned int CMPX = 0xDD; //CMPX, realiza comparação entre acumulador e indice
 unsigned int CMPY = 0xD9;  //CMPY, realiza comparação entre acumulador e indice y
 
 typedef enum {
-    ADC = 0x65,    // ADC, adiciona o acumulador a algum outro registrador
-    ADChash = 0x69,    // ADC#, adiciona imediato ao acumulador
-    SBChash = 0xE9,    // SBC#, subtrai o acumulador por um imediato
-    ANDY = 0x39,    // ANDY, realiza operação lógica AND entre o acumulador e o índice Y
-    ORAX = 0x1D,    // ORAX, realiza operação lógica OR entre o acumulador e o índice X
-    EORX = 0x5D,    // EORX, realiza operação lógica XOR entre o acumulador e o índice X
-    ASL = 0x0E,    // ASL (arithmetic shift left), realiza a operação de shift, deslocando os bits do acumulador para a esquerda e preenchendo o bit mais à direita com 0
-    LSR = 0x4A,    // LSR (shift pra direita)
-    ANDI = 0x29,    // ANDI (AND com imediato), realiza a operação AND entre um valor imediato e um acumulador
-    ORAhash = 0x09,    // ORA#, realiza operação OR entre acumulador e valor imediato
-    EORhash = 0x49,    // EOR#, realiza operação XOR entre acumulador e valor imediato
-    CMPhash = 0xC9,    // CMP, realiza a operação de comparação entre o que está no acumulador e um valor imediato
-    CMPX = 0xDD,    // CMPX, realiza comparação entre acumulador e índice x
-    CMPY = 0xD9    // CMPY, realiza comparação entre acumulador e índice y
+    eADC = 0x65,    // ADC, adiciona o acumulador a algum outro registrador
+    eADChash = 0x69,    // ADC#, adiciona imediato ao acumulador
+    eSBChash = 0xE9,    // SBC#, subtrai o acumulador por um imediato
+    eANDY = 0x39,    // ANDY, realiza operação lógica AND entre o acumulador e o índice Y
+    eORAX = 0x1D,    // ORAX, realiza operação lógica OR entre o acumulador e o índice X
+    eEORX = 0x5D,    // EORX, realiza operação lógica XOR entre o acumulador e o índice X
+    eASL = 0x0E,    // ASL (arithmetic shift left), realiza a operação de shift, deslocando os bits do acumulador para a esquerda e preenchendo o bit mais à direita com 0
+    eLSR = 0x4A,    // LSR (shift pra direita)
+    eANDI = 0x29,    // ANDI (AND com imediato), realiza a operação AND entre um valor imediato e um acumulador
+    eORAhash = 0x09,    // ORA#, realiza operação OR entre acumulador e valor imediato
+    eEORhash = 0x49,    // EOR#, realiza operação XOR entre acumulador e valor imediato
+    eCMPhash = 0xC9,    // CMP, realiza a operação de comparação entre o que está no acumulador e um valor imediato
+    eCMPX = 0xDD,    // CMPX, realiza comparação entre acumulador e índice x
+    eCMPY = 0xD9    // CMPY, realiza comparação entre acumulador e índice y
 } InstrucoesULA;
 
 // INSTRUÇÕES DE ACESSO A MEMÓRIA
@@ -87,15 +93,15 @@ unsigned int STX = 0x86; //STX, armazena o índice x em um endereço de memória
 unsigned int STY = 0x8C;  //STY, armazena o índice y em um endereço de memória
 
 typedef enum {
-    LDAhash = 0xA9,  //LDA com imediato
-    LDA = 0xAD,  //LDA com endereço de memória
-    LDXhash = 0xA2,  //LDX, carrega índice x com imediato
-    LDX = 0xAE,  //LDX, carrega índice x com endereço de memória
-    LDYhash = 0xA0,  //LDY, carrega índice y com imediato
-    LDY = 0xAC,  //LDY, carrega índice y com endereço de memória
-    STA = 0x85,  //STA, armazena o valor do acumulador para um endereço de memória da RAM
-    STX = 0x86, //STX, armazena o índice x em um endereço de memória no vetor de memória RAM
-    STY = 0x8C  //STY, armazena o índice y em um endereço de memória
+    eLDAhash = 0xA9,  //LDA com imediato
+    eLDA = 0xAD,  //LDA com endereço de memória
+    eLDXhash = 0xA2,  //LDX, carrega índice x com imediato
+    eLDX = 0xAE,  //LDX, carrega índice x com endereço de memória
+    eLDYhash = 0xA0,  //LDY, carrega índice y com imediato
+    eLDY = 0xAC,  //LDY, carrega índice y com endereço de memória
+    eSTA = 0x85,  //STA, armazena o valor do acumulador para um endereço de memória da RAM
+    eSTX = 0x86, //STX, armazena o índice x em um endereço de memória no vetor de memória RAM
+    eSTY = 0x8C  //STY, armazena o índice y em um endereço de memória
 } InstrucoesMemoria;
 
 
@@ -106,10 +112,10 @@ uint16_t BCC = 0x90;  //BCC, salta pra label se o bit de carry estiver definido 
 uint16_t BCS = 0xB0;  //BCS, salta pra label se o bit de carry estiver definido como 1
 
 typedef enum {
-    BEQ = 0xF0,  //BEQ, salta para label se a condição de igualdade for verdadeira
-    BNE = 0xD0,  //BNE, salta para label se a condição de igualdade não for verdadeira
-    BCC = 0x90,  //BCC, salta para label se o bit de carry estiver definido como zero
-    BCS = 0xB0   //BCS, salta para label se o bit de carry estiver definido como 1
+    eBEQ = 0xF0,  //BEQ, salta para label se a condição de igualdade for verdadeira
+    eBNE = 0xD0,  //BNE, salta para label se a condição de igualdade não for verdadeira
+    eBCC = 0x90,  //BCC, salta para label se o bit de carry estiver definido como zero
+    eBCS = 0xB0   //BCS, salta para label se o bit de carry estiver definido como 1
 } InstrucoesSaltoCondicional;
 
 //INSTRUÇÕES DE SALTO INCONDICIONAL
@@ -118,9 +124,9 @@ unsigned int JSR = 0x20;  //JSR, salta incondicionalmente para o endreço de mem
 uint8_t RTS = 0x60;  //RTS, retorna ao endereço de retorno estabelecido após JSR
 
 typedef enum {
-    JMP = 0x4C,  //JMP, salta incondicionalmente para o endereço de memória definido
-    JSR = 0x20,  //JSR, salta incondicionalmente para o endereço de memória definido e salva endereço de memória para retornar ao ponto de chamada
-    RTS = 0x60   //RTS, retorna ao endereço de retorno estabelecido após JSR
+    eJMP = 0x4C,  //JMP, salta incondicionalmente para o endereço de memória definido
+    eJSR = 0x20,  //JSR, salta incondicionalmente para o endereço de memória definido e salva endereço de memória para retornar ao ponto de chamada
+    eRTS = 0x60   //RTS, retorna ao endereço de retorno estabelecido após JSR
 } InstrucoesSaltoIncondicional;
  
 
