@@ -86,6 +86,18 @@ unsigned int STA = 0x85;  //STA, armazena o valor do acumlador para um endereço
 unsigned int STX = 0x86; //STX, armazena o índice x em um endereço de memória no vetor de memória ram
 unsigned int STY = 0x8C;  //STY, armazena o índice y em um endereço de memória
 
+typedef enum {
+    LDAhash = 0xA9,  //LDA com imediato
+    LDA = 0xAD,  //LDA com endereço de memória
+    LDXhash = 0xA2,  //LDX, carrega índice x com imediato
+    LDX = 0xAE,  //LDX, carrega índice x com endereço de memória
+    LDYhash = 0xA0,  //LDY, carrega índice y com imediato
+    LDY = 0xAC,  //LDY, carrega índice y com endereço de memória
+    STA = 0x85,  //STA, armazena o valor do acumulador para um endereço de memória da RAM
+    STX = 0x86, //STX, armazena o índice x em um endereço de memória no vetor de memória RAM
+    STY = 0x8C  //STY, armazena o índice y em um endereço de memória
+} InstrucoesMemoria;
+
 
 //INSTRUÇÕES DE SALTO CONDICIONAL
 uint16_t BEQ = 0xF0;  //BEQ, salta pra label se a condição de igualdade for verdadeira, a instrução a ser executada antes da mesma deve ser CMP para a definição de flag
@@ -93,10 +105,23 @@ uint16_t BNE = 0xD0;  //BNE, salta pra label se a condição de igualdade não f
 uint16_t BCC = 0x90;  //BCC, salta pra label se o bit de carry estiver definido como zero
 uint16_t BCS = 0xB0;  //BCS, salta pra label se o bit de carry estiver definido como 1
 
+typedef enum {
+    BEQ = 0xF0,  //BEQ, salta para label se a condição de igualdade for verdadeira
+    BNE = 0xD0,  //BNE, salta para label se a condição de igualdade não for verdadeira
+    BCC = 0x90,  //BCC, salta para label se o bit de carry estiver definido como zero
+    BCS = 0xB0   //BCS, salta para label se o bit de carry estiver definido como 1
+} InstrucoesSaltoCondicional;
+
 //INSTRUÇÕES DE SALTO INCONDICIONAL
 unsigned int JMP = 0x4C;  //JMP, salta incondicionalmente para o endereço de memória definido
 unsigned int JSR = 0x20;  //JSR, salta incondicionalmente para o endreço de memória definido e salva endereço de memória para retornar ao ponto de chamada
 uint8_t RTS = 0x60;  //RTS, retorna ao endereço de retorno estabelecido após JSR
+
+typedef enum {
+    JMP = 0x4C,  //JMP, salta incondicionalmente para o endereço de memória definido
+    JSR = 0x20,  //JSR, salta incondicionalmente para o endereço de memória definido e salva endereço de memória para retornar ao ponto de chamada
+    RTS = 0x60   //RTS, retorna ao endereço de retorno estabelecido após JSR
+} InstrucoesSaltoIncondicional;
  
 
 #endif
