@@ -33,7 +33,8 @@ typedef struct {
 
 } Processador;
 
-uint8_t ram[0x07D0]; //declaração da memória ram com 4kb de armazenamento
+uint8_t dataBus; //variavel responsável pela transferencia de dados
+uint8_t addressBus; //variavel responsavel por transferir endereços de memória, quando necessário em instruções de acesso a memória
 
 // As variáveis que não possuirem o formato uintX_t são aquelas que representam as instruções com opcodes de 3 bytes
 // Os opcodes no NES podem variar entre 1 a 3 bytes
@@ -57,8 +58,25 @@ uint16_t CMPhash = 0xC9;  //CMP, realiza a operação de comparação entre oq e
 unsigned int CMPX = 0xDD; //CMPX, realiza comparação entre acumulador e indice x
 unsigned int CMPY = 0xD9;  //CMPY, realiza comparação entre acumulador e indice y
 
+typedef enum {
+    ADC = 0x65,    // ADC, adiciona o acumulador a algum outro registrador
+    ADChash = 0x69,    // ADC#, adiciona imediato ao acumulador
+    SBChash = 0xE9,    // SBC#, subtrai o acumulador por um imediato
+    ANDY = 0x39,    // ANDY, realiza operação lógica AND entre o acumulador e o índice Y
+    ORAX = 0x1D,    // ORAX, realiza operação lógica OR entre o acumulador e o índice X
+    EORX = 0x5D,    // EORX, realiza operação lógica XOR entre o acumulador e o índice X
+    ASL = 0x0E,    // ASL (arithmetic shift left), realiza a operação de shift, deslocando os bits do acumulador para a esquerda e preenchendo o bit mais à direita com 0
+    LSR = 0x4A,    // LSR (shift pra direita)
+    ANDI = 0x29,    // ANDI (AND com imediato), realiza a operação AND entre um valor imediato e um acumulador
+    ORAhash = 0x09,    // ORA#, realiza operação OR entre acumulador e valor imediato
+    EORhash = 0x49,    // EOR#, realiza operação XOR entre acumulador e valor imediato
+    CMPhash = 0xC9,    // CMP, realiza a operação de comparação entre o que está no acumulador e um valor imediato
+    CMPX = 0xDD,    // CMPX, realiza comparação entre acumulador e índice x
+    CMPY = 0xD9    // CMPY, realiza comparação entre acumulador e índice y
+} InstrucoesULA;
+
 // INSTRUÇÕES DE ACESSO A MEMÓRIA
-uint16_t LDA = 0xA9;  //LDA com imediato
+uint16_t LDAhash = 0xA9;  //LDA com imediato
 unsigned int LDA = 0xAD;  //LDA com endereço de memória
 uint16_t LDXhash = 0xA2;  //LDX, carrega índice x com imediato
 unsigned int LDX = 0xAE;  //LDX, carrega indice x com endereço de memória
