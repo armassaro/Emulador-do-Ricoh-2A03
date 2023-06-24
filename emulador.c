@@ -221,6 +221,8 @@ while (1) {
 
                 arquivo = fopen(caminhoarquivo, "rb");
 
+                fscanf(arquivo, "%x: ", processador.programcounter);
+
                 if(arquivo == NULL) {
 
                     wclear(borda);
@@ -266,6 +268,8 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
     char StringAux[20];
     char StringAux1[20];
 
+    WINDOW *console = newwin(10, 10, yborda - 4, xborda - 4);
+
     while(arquivo != EOF) {
         
         wclear(borda);
@@ -305,6 +309,9 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
         
         mvwprintw(borda, (yborda - 7) / 2 + 13, (xborda - strlen("Pressione qualquer tecla para o proximo ciclo")) / 2, "Pressione qualquer tecla para o proximo ciclo");
         
+        wborder(console, '#', '#', '-', '-', '-', '-', '-', '-');
+        wrefresh(console);
+        
         wborder(borda, '#', '#', '-', '-', '-', '-', '-', '-');
         wrefresh(borda);
         
@@ -324,17 +331,71 @@ void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, i
 
     noecho();
     cbreak();
-
-    fscanf(arquivo, "%x: ", processador->programcounter);
      
     while(arquivo != EOF) {
 
-        fscanf(arquivo, "%x ", &resultadoleitura);
+        fscanf(&arquivo, "%x ", &resultadoleitura);
 
         switch(resultadoleitura) {
 
-            case 0xA9:  //LDA
+            case ADC:
+            UnidadeLogicaAritmetica();
+            break;
 
+            case ADChash:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case SBChash:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case ANDY:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case ORAX:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case EORX:
+            UnidadeLogicaAritmetica();
+            break;
+        
+            case ASL:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case LSR:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case ANDI:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case ORAhash:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case EORhash:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case CMPhash:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case CMPX:
+            UnidadeLogicaAritmetica();
+            break;
+
+            case CMPY:
+            UnidadeLogicaAritmetica();
+            break;
+
+            default:
+            // Caso a variável não esteja listada acima
             break;
 
         }
