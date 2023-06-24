@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <ncurses.h>
-#include <unistd.h>
-#include <string.h>
-#include <assert.h>
 #include "instrucoes6502.h"
 
 void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda);
@@ -122,8 +115,6 @@ int main() {
     //     usleep(10000);
 
     // }
-
-    MENU:
 
     noecho();
     cbreak();
@@ -255,8 +246,6 @@ while (1) {
     }
 }
 
-FIM:
-
     endwin();
 
     return 0;
@@ -317,81 +306,96 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
         
         getch();
 
-        LerArquivo(processador, caminhoarquivo, arquivo, yterminal, xterminal, yborda, xborda);
-
-    }
-
-    return;
-
-}
-
-void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda) {
-
-    int resultadoleitura;
-
-    noecho();
-    cbreak();
-     
-    while(arquivo != EOF) {
+        int resultadoleitura;
 
         fscanf(&arquivo, "%x ", &resultadoleitura);
 
         switch(resultadoleitura) {
 
-            case ADC:
-            UnidadeLogicaAritmetica();
+            case eADC:
+             
             break;
 
-            case ADChash:
-            UnidadeLogicaAritmetica();
+            case eADChash:
+             
             break;
 
-            case SBChash:
-            UnidadeLogicaAritmetica();
+            case eSBChash:
+             
             break;
 
-            case ANDY:
-            UnidadeLogicaAritmetica();
+            case eANDY:
+             
             break;
 
-            case ORAX:
-            UnidadeLogicaAritmetica();
+            case eORAX:
+             
             break;
 
-            case EORX:
-            UnidadeLogicaAritmetica();
+            case eEORX:
+             
             break;
         
-            case ASL:
-            UnidadeLogicaAritmetica();
+            case eASL:
+             
             break;
 
-            case LSR:
-            UnidadeLogicaAritmetica();
+            case eLSR:
+             
             break;
 
-            case ANDI:
-            UnidadeLogicaAritmetica();
+            case eANDI:
+             
             break;
 
-            case ORAhash:
-            UnidadeLogicaAritmetica();
+            case eORAhash:
+             
             break;
 
-            case EORhash:
-            UnidadeLogicaAritmetica();
+            case eEORhash:
+             
             break;
 
-            case CMPhash:
-            UnidadeLogicaAritmetica();
+            case eCMPhash:
+             
             break;
 
-            case CMPX:
-            UnidadeLogicaAritmetica();
+            case eCMPX:
+             
             break;
 
-            case CMPY:
-            UnidadeLogicaAritmetica();
+            case eCMPY:
+             
+            break;
+
+            case eLDAhash:
+            fscanf(arquivo, "%x ", &resultadoleitura);
+            processador->acumulador = resultadoleitura;
+            break;
+            case eLDA:
+            fscanf(arquivo, "%x ", &resultadoleitura);
+            processador->acumulador = resultadoleitura;
+            break;
+            case eLDXhash:
+            // Faça algo para LDXhash
+            break;
+            case eLDX:
+            // Faça algo para LDX
+            break;
+            case eLDYhash:
+            // Faça algo para LDYhash
+            break;
+            case eLDY:
+            // Faça algo para LDY
+            break;
+            case eSTA:
+            // Faça algo para STA
+            break;
+            case eSTX:
+            // Faça algo para STX
+            break;
+            case eSTY:
+            // Faça algo para STY
             break;
 
             default:
