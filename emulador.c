@@ -1,7 +1,7 @@
 #include "instrucoes6502.h"
 
-void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda);
-void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda);
+void LerArquivo(Processador *processador, char *caminhoarquivo, FILE *arquivoBin, FILE *arquivoTexto, int yterminal, int xterminal, int yborda, int xborda);
+void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivoBin, int yterminal, int xterminal, int yborda, int xborda);
 
 int main() {
     
@@ -16,7 +16,7 @@ int main() {
     int xterminal;
     int yterminal;
     char caminhoarquivo[200]; //string que indica o nome ou o caminho do arquivo binário
-    FILE *arquivo;
+    FILE *arquivoBin;
 
     getmaxyx(stdscr, yterminal, xterminal);
 
@@ -210,11 +210,11 @@ while (1) {
                 getnstr(caminhoarquivo, 200);  //função de coleta de string pra biblioteca ncurses q nn deixa caractere \n como final
                 setbuf(stdin, NULL);
 
-                arquivo = fopen(caminhoarquivo, "rb");
+                arquivoBin = fopen(caminhoarquivo, "rb");
 
-                fscanf(arquivo, "%x: ", processador.programcounter);
+                fread(processador.programcounter, sizeof(uint16_t), 1, arquivoBin);  //coleta do program counter
 
-                if(arquivo == NULL) {
+                if(arquivoBin == NULL) {
 
                     wclear(borda);
                     refresh();
@@ -236,7 +236,7 @@ while (1) {
                     mvwprintw(borda, yborda / 2, (xborda - strlen("Sucesso na abertura do arquivo! Pressione qualquer tecla para prosseguir")) / 2, "Sucesso na abertura do arquivo! Pressione qualquer tecla para prosseguir");
                     wrefresh(borda);
                     getch();
-                    InterfaceGrafica(borda, &processador, caminhoarquivo, arquivo, yterminal, xterminal, yborda, xborda);
+                    InterfaceGrafica(borda, &processador, caminhoarquivo, arquivoBin, yterminal, xterminal, yborda, xborda);
 
                 }
 
@@ -251,15 +251,17 @@ while (1) {
     return 0;
 }
 
-void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivo, int yterminal, int xterminal, int yborda, int xborda) {
+void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarquivo, FILE *arquivoBin, int yterminal, int xterminal, int yborda, int xborda) {
 
     int ContadorCiclos = 0;
     char StringAux[20];
     char StringAux1[20];
+    int IntAux;
+    char *nomeInstrucao;
 
     WINDOW *console = newwin(10, 10, yborda - 4, xborda - 4);
 
-    while(arquivo != EOF) {
+    while(fread(IntAux, sizeof(uint16_t), 1, arquivoBin) != EOF) {
         
         wclear(borda);
 
@@ -293,7 +295,7 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
         strcat(StringAux, StringAux1);
         mvwprintw(borda, (yborda - 7) / 2 + 5, (xborda - strlen(StringAux)) / 2, StringAux);
         
-        sprintf(StringAux1, "Ciclo = %i", ContadorCiclos);
+        sprintf(StringAux1, "Instrucao executada = %s", nomeInstrucao);
         mvwprintw(borda, (yborda - 7) / 2 + 6, (xborda - strlen(StringAux1)) / 2, StringAux1);
         
         mvwprintw(borda, (yborda - 7) / 2 + 13, (xborda - strlen("Pressione qualquer tecla para o proximo ciclo")) / 2, "Pressione qualquer tecla para o proximo ciclo");
@@ -308,7 +310,7 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
 
         int resultadoleitura;
 
-        fscanf(&arquivo, "%x ", &resultadoleitura);
+        fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);
 
         switch(resultadoleitura) {
 
@@ -369,33 +371,166 @@ void InterfaceGrafica(WINDOW *borda, Processador *processador, char *caminhoarqu
             break;
 
             case eLDAhash:
-            fscanf(arquivo, "%x ", &resultadoleitura);
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);
+            sprintf(nomeInstrucao, "LDA #$%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
             processador->acumulador = resultadoleitura;
+            processador->programcounter = processador->programcounter + sizeof(LDAhash);
             break;
+
             case eLDA:
-            fscanf(arquivo, "%x ", &resultadoleitura);
-            processador->acumulador = resultadoleitura;
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);  //organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "LDA $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->acumulador = processador->ram[addressBus];
+            processador->programcounter = processador->programcounter + 3;
             break;
+
             case eLDXhash:
-            // Faça algo para LDXhash
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);
+            sprintf(nomeInstrucao, "LDX #$%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->ram[addressBus] = processador->indicex;
+            processador->programcounter = processador->programcounter + sizeof(LDXhash);
             break;
+
             case eLDX:
-            // Faça algo para LDX
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);  //organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "LDX $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->indicex = processador->ram[addressBus];
+            processador->programcounter = processador->programcounter + 3;
             break;
+
             case eLDYhash:
-            // Faça algo para LDYhash
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);
+            sprintf(nomeInstrucao, "LDY #$%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->ram[addressBus] = processador->indicey;
+            processador->programcounter = processador->programcounter + sizeof(LDYhash);
             break;
+
             case eLDY:
-            // Faça algo para LDY
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);//organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "LDY $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->indicey = processador->ram[addressBus];
+            processador->programcounter = processador->programcounter + 3;
             break;
+
             case eSTA:
-            // Faça algo para STA
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);  //organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "STA $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->ram[addressBus] = processador->acumulador;
+            processador->programcounter = processador->programcounter + 3;
             break;
+
             case eSTX:
-            // Faça algo para STX
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);  //organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "STX $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->ram[addressBus] = processador->indicex;
+            processador->programcounter = processador->programcounter + 3;
             break;
+
             case eSTY:
-            // Faça algo para STY
+            fread(addressBus, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem inferior 
+            fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //coleta o byte de ordem superior
+            sprintf(StringAux, "%i%i", resultadoleitura, addressBus);  //organiza os bytes de ordem superior e inferior em uma string
+            sscanf(StringAux, "%i", addressBus);  //converte de string para inteiro
+            sprintf(nomeInstrucao, "STY $%i", addressBus);  //copia string que contém a informação da instrução que está sendo executada
+            processador->ram[addressBus] = processador->indicey;
+            processador->programcounter = processador->programcounter + 3;
+            break;
+
+            case eBEQ:
+            if(processador->flags.zero == TRUE) {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //leitura de operando
+                sprintf(nomeInstrucao, "BEQ #$%i", resultadoleitura);  //copia string que contém a informação da instrução que está sendo executada
+                processador->programcounter = processador->programcounter + resultadoleitura;  //adiciona ao program counter
+                fseek(arquivoBin, -sizeof(uint8_t), SEEK_CUR);  //retorna o ponteiro pra instrução
+                fseek(arquivoBin, resultadoleitura * sizeof(uint8_t), SEEK_CUR);
+
+            }
+            else {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);
+                processador->programcounter = processador->programcounter + 2;
+
+            }
+            break;
+
+            case eBNE:
+            if(processador->flags.zero == FALSE) {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //leitura de operando
+                processador->programcounter = processador->programcounter + resultadoleitura;  //adiciona ao program counter
+                fseek(arquivoBin, -sizeof(uint8_t), SEEK_CUR);  //retorna o ponteiro pra instrução
+                fseek(arquivoBin, resultadoleitura, SEEK_CUR);  //desloca o ponteiro pro 
+
+            }
+            else {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);
+                processador->programcounter = processador->programcounter + sizeof(BNE);
+
+            }
+            break;
+
+            case eBCC:
+            if(processador->flags.carry == FALSE) {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //leitura de operando
+                processador->programcounter = processador->programcounter + resultadoleitura;  //adiciona ao program counter
+                fseek(arquivoBin, -sizeof(uint8_t), SEEK_CUR);  //retorna ponteiro pra instrução
+                fseek(arquivoBin, resultadoleitura, SEEK_CUR);
+
+            }
+            else {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);
+                processador->programcounter = processador->programcounter + sizeof(BCC);
+
+            }
+            break;
+
+            case eBCS:
+            if(processador->flags.carry == TRUE) {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);  //leitura de operando
+                processador->programcounter = processador->programcounter + resultadoleitura;  //adiciona ao program counter
+                fseek(arquivoBin, -sizeof(uint8_t), SEEK_CUR);  //retorna ponteiro pra instrução
+                fseek(arquivoBin, resultadoleitura, SEEK_CUR);
+
+            }
+            else {
+
+                fread(resultadoleitura, sizeof(uint8_t), 1, arquivoBin);
+                processador->programcounter = processador->programcounter + sizeof(BCS);
+
+            }
+            break;
+
+            case eJMP:
+            printf("Instrução: JMP\n");
+            // Lógica para salto incondicional JMP
+            break;
+            case eJSR:
+            printf("Instrução: JSR\n");
+            // Lógica para salto incondicional JSR
+            break;
+            case eRTS:
+            printf("Instrução: RTS\n");
+            // Lógica para salto incondicional RTS
             break;
 
             default:
